@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class FrontCategoryServiceImpl implements IFrontCategoryService {
@@ -49,8 +50,16 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
         List<CategoryStandardVO> categoryList = dubboCategoryService.getCategoryList();
         //编写一个方法，将categoryList转换为三级分类树结构对象
         FrontCategoryTreeVO<FrontCategoryEntity> treeVO = initTree(categoryList);
-
-        return null;
+        //上面完成了三级分类树对象构建的过程，返回结果前，要将treeVO保存到Redis
+        //实际开发中保存时间可能较长，例如24小时甚至更长时间
+        redisTemplate.boundValueOps(CATEGORY_TREE_KEY).set(
+                treeVO,
+                1,
+                TimeUnit.MINUTES
+        );
+        // 我们学习过程中需要反复测试，所以保存时间不宜过长，几分钟即可
+        //最后别忘了返回
+        return treeVO;
     }
 
     private FrontCategoryTreeVO<FrontCategoryEntity> initTree(List<CategoryStandardVO> categoryList) {
